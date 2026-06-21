@@ -1,0 +1,40 @@
+﻿@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="hero-bar text-center">
+    <div class="container">
+        <h1 class="fw-bold display-5 mb-2">Welkom bij het Ziekenhuis</h1>
+        <p class="lead mb-4">Hier vindt u actuele informatie over afdelingen, wachttijden en aankondigingen.</p>
+        <a href="/Cast" class="btn btn-light btn-lg px-4">
+            <i class="bi bi-display me-2"></i>Bekijk schermen
+        </a>
+    </div>
+</div>
+
+<div class="container py-5">
+    <h2 class="fw-bold mb-4">Actuele aankondigingen</h2>
+    <div class="row g-3">
+        @foreach (var a in Model.Announcements)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <span class="badge bg-primary mb-2">@a.Department?.Name</span>
+                        <h6 class="fw-bold">@a.Title</h6>
+                        <p class="text-muted small mb-0">@a.Content</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 small text-muted">
+                        @a.PublishedAt.ToLocalTime().ToString("dd MMMM yyyy")
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!Model.Announcements.Any())
+        {
+            <div class="col-12 text-muted">Geen actuele aankondigingen.</div>
+        }
+    </div>
+</div>
