@@ -59,25 +59,26 @@ namespace NarrowCasting_V5.Pages.Admin.Screens
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(int? departmentId)
         {
             await LoadDepartmentsAsync();
 
-            // Ensure DepartmentId is read from the posted form in case client binding produced an empty value
-            var deptFormValue = Request.Form["Screen.DepartmentId"].ToString();
-            if (!string.IsNullOrEmpty(deptFormValue) && int.TryParse(deptFormValue, out var parsedDeptId))
-            {
-                Screen.DepartmentId = parsedDeptId;
-            }
-
-            // Re-validate model state after fixing any missing values from the form
-            ModelState.Clear();
-            TryValidateModel(Screen);
+            // Map simple posted departmentId into bound Screen if present
+            if (departmentId.HasValue && departmentId.Value > 0)
+                Screen.DepartmentId = departmentId.Value;
 
             if (!ModelState.IsValid)
             {
-                var errs = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Where(s => !string.IsNullOrEmpty(s));
-                if (errs.Any()) TempData["Error"] = string.Join("; ", errs);
+                var entries = ModelState.Select(kvp => new
+                {
+                    Key = kvp.Key,
+                    Errors = kvp.Value.Errors.Select(e => e.ErrorMessage).Where(s => !string.IsNullOrEmpty(s)).ToArray()
+                }).Where(e => e.Errors.Any()).ToArray();
+
+                var details = string.Join("; ", entries.Select(e => $"{e.Key}: {string.Join(",", e.Errors)}"));
+                // Include attempted department id for debugging
+                details = $"Attempted DepartmentId={Screen?.DepartmentId ?? -1}; {details}";
+                TempData["Error"] = details;
                 return Page();
             }
 

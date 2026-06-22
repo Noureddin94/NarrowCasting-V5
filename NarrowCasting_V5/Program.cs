@@ -12,7 +12,31 @@ namespace NarrowCasting_V5
     {
         public static async Task Main(string[] args)
         {
+            // Configure Serilog early so startup errors are captured
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
+                .CreateLogger();
+            // Capture unhandled exceptions from AppDomain and TaskScheduler
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                try { Log.Fatal((Exception?)e.ExceptionObject, "Unhandled domain exception"); }
+                catch { }
+            };
+
+            TaskScheduler.UnobservedTaskException += (s, e) =>
+            {
+                try
+                {
+                    Log.Fatal(e.Exception, "Unobserved task exception");
+                    e.SetObserved();
+                }
+                catch { }
+            };
+
             var builder = WebApplication.CreateBuilder(args);
+            builder.Host.UseSerilog();
 
             // Database
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -81,55 +105,59 @@ namespace NarrowCasting_V5
 
             var app = builder.Build();
 
-            // Database migration + role seeding
-            using (var scope = app.Services.CreateScope())
+            // Database migration + role seeding - only run when this assembly is the entry assembly
+            // Only run migrations/seed when running the web app in Development environment.
+            if (app.Environment.IsDevelopment())
             {
-                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
-                await db.Database.MigrateAsync();
-
-                // Ensure roles exist
-                foreach (var role in new[] { "Admin", "Employee" })
+                using (var scope = app.Services.CreateScope())
                 {
-                    if (!await roleManager.RoleExistsAsync(role))
-                        await roleManager.CreateAsync(new IdentityRole(role));
-                }
+                    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-                const string adminEmail = "admin@ziekenhuis.nl";
-                const string adminPassword = "Admin@123!";
+                    await db.Database.MigrateAsync();
 
-                var adminUser = await userManager.FindByEmailAsync(adminEmail);
-                if (adminUser is null)
-                {
-                    adminUser = new ApplicationUser
+                    // Ensure roles exist
+                    foreach (var role in new[] { "Admin", "Employee" })
                     {
-                        UserName = adminEmail,
-                        Email = adminEmail,
-                        EmailConfirmed = true,
-                        FullName = "Systeem Administrator",
-                        DepartmentId = null,
-                        IsActive = true,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    var createResult = await userManager.CreateAsync(adminUser, adminPassword);
-                    if (!createResult.Succeeded)
-                    {
-                        Log.Warning("Could not create default admin account: {Errors}",
-                            string.Join("; ", createResult.Errors.Select(e => e.Description)));
+                        if (!await roleManager.RoleExistsAsync(role))
+                            await roleManager.CreateAsync(new IdentityRole(role));
                     }
-                }
 
-                // Ensure the account is in the Admin role (idempotent)
-                if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
-                {
-                    var addRoleResult = await userManager.AddToRoleAsync(adminUser, "Admin");
-                    if (!addRoleResult.Succeeded)
+                    const string adminEmail = "admin@ziekenhuis.nl";
+                    const string adminPassword = "Admin@123!";
+
+                    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+                    if (adminUser is null)
                     {
-                        Log.Warning("Could not add admin role to account: {Errors}",
-                            string.Join("; ", addRoleResult.Errors.Select(e => e.Description)));
+                        adminUser = new ApplicationUser
+                        {
+                            UserName = adminEmail,
+                            Email = adminEmail,
+                            EmailConfirmed = true,
+                            FullName = "Systeem Administrator",
+                            DepartmentId = null,
+                            IsActive = true,
+                            CreatedAt = DateTime.UtcNow
+                        };
+
+                        var createResult = await userManager.CreateAsync(adminUser, adminPassword);
+                        if (!createResult.Succeeded)
+                        {
+                            Log.Warning("Could not create default admin account: {Errors}",
+                                string.Join("; ", createResult.Errors.Select(e => e.Description)));
+                        }
+                    }
+
+                    // Ensure the account is in the Admin role (idempotent)
+                    if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
+                    {
+                        var addRoleResult = await userManager.AddToRoleAsync(adminUser, "Admin");
+                        if (!addRoleResult.Succeeded)
+                        {
+                            Log.Warning("Could not add admin role to account: {Errors}",
+                                string.Join("; ", addRoleResult.Errors.Select(e => e.Description)));
+                        }
                     }
                 }
             }
@@ -149,7 +177,7 @@ namespace NarrowCasting_V5
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
-            //app.UseSerilogRequestLogging();
+            app.UseSerilogRequestLogging();
             
             app.UseAuthentication();
             app.UseAuthorization();
@@ -159,7 +187,20 @@ namespace NarrowCasting_V5
                .WithStaticAssets();
             app.MapControllers();
 
-            await app.RunAsync();
+            try
+            {
+                Log.Information("Starting web host");
+                await app.RunAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly");
+                throw;
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }

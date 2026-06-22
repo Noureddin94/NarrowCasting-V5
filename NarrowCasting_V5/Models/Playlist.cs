@@ -12,14 +12,14 @@ namespace NarrowCasting_V5.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // FK
-        [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Selecteer een scherm.")]
         public int ScreenId { get; set; }
         public string CreatedById { get; set; } = string.Empty;
 
         // Navigation
-        public Screen Screen { get; set; } = null!;
-        public ApplicationUser CreatedBy { get; set; } = null!;
-        public ICollection<PlaylistItem> Items { get; set; } = [];
-        public ICollection<Schedule> Schedules { get; set; } = [];
+        public Screen? Screen { get; set; }
+        public ApplicationUser? CreatedBy { get; set; }
+        public ICollection<PlaylistItem> Items { get; set; } = new List<PlaylistItem>();
+        public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
     }
 }

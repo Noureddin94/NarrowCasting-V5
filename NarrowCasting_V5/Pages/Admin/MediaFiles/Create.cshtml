@@ -1,0 +1,29 @@
+@page
+@model NarrowCasting_V5.Pages.Admin.MediaFiles.CreateModel
+@{
+    ViewData["Title"] = "Upload media";
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label small">Bestand *</label>
+                <input type="file" name="Upload" class="form-control" />
+                <span class="text-danger small">@ViewData.ModelState["Upload"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small">Bijschrift</label>
+                <input name="Caption" class="form-control" maxlength="500" />
+            </div>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Uploaden</button>
+                <a asp-page="/Admin/MediaFiles/Index" class="btn btn-outline-secondary">Terug</a>
+            </div>
+        </form>
+    </div>
+</div>

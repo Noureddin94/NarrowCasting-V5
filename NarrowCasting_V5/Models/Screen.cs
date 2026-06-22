@@ -17,12 +17,13 @@ namespace NarrowCasting_V5.Models
         public bool IsStaffScreen { get; set; } = false;
 
         // FK
-        [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Selecteer een afdeling.")]
         public int DepartmentId { get; set; }
 
         // Navigation properties
-        public Department Department { get; set; } = null!;
-        public ICollection<Playlist> Playlists { get; set; } = [];
-        public ICollection<Schedule> Schedules { get; set; } = [];
+        // Make navigation nullable so model validation does not require the full related entity
+        public Department? Department { get; set; }
+        public ICollection<Playlist> Playlists { get; set; } = new List<Playlist>();
+        public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
     }
 }
