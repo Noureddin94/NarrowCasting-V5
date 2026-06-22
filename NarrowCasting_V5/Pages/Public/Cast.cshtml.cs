@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using NarrowCasting_V5.Interfaces;
 using NarrowCasting_V5.Models;
+using System.Linq;
 
 namespace NarrowCasting_V5.Pages.Public
 {
