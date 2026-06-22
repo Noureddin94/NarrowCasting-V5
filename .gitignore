@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Graphify folder for generated DGML files
+graphify-out/
+/NarrowCasting_V5/wwwroot/uploads
+/NarrowCasting_V5/Refactoring

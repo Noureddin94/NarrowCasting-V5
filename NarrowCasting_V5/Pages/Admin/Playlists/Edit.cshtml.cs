@@ -60,6 +60,7 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
             {
                 var playlist = await _playlists.GetByIdAsync(id.Value);
                 if (playlist is null) return NotFound();
+                if (playlist.Screen is null) return NotFound();
 
                 // Employee can only manage playlists on their own department's screens
                 if (!User.IsInRole("Admin"))
@@ -80,7 +81,22 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
             await LoadDropdownsAsync();
             if (!ModelState.IsValid) return Page();
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
+            var selectedScreen = await _screens.GetByIdAsync(Playlist.ScreenId);
+            if (selectedScreen is null)
+            {
+                ModelState.AddModelError("Playlist.ScreenId", "Selecteer een geldig scherm.");
+                return Page();
+            }
+
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != selectedScreen.DepartmentId)
+                    return Forbid();
+            }
 
             if (Playlist.Id == 0)
             {
@@ -90,18 +106,57 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
                 return RedirectToPage(new { id = Playlist.Id });
             }
 
-            await _playlists.UpdateAsync(Playlist, userId);
+            // For updates, load existing entity and copy only editable scalar fields to avoid
+            // unintentionally overwriting navigation collections (Items) which are not part of the details form.
+            var existing = await _playlists.GetByIdAsync(Playlist.Id);
+            if (existing is null) return NotFound();
+            if (existing.Screen is null) return NotFound();
+
+            // permission check for employee
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != existing.Screen.DepartmentId)
+                    return Forbid();
+            }
+
+            existing.Name = Playlist.Name;
+            existing.ScreenId = Playlist.ScreenId;
+
+            await _playlists.UpdateAsync(existing, userId);
             TempData["Success"] = "Playlist bijgewerkt.";
             return RedirectToPage(new { id = Playlist.Id });
         }
 
         public async Task<IActionResult> OnPostAddItemAsync(int playlistId, int mediaFileId, int durationSeconds)
         {
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
 
-            // Next order = current item count
+            if (mediaFileId <= 0)
+            {
+                TempData["Error"] = "Selecteer een mediabestand.";
+                return RedirectToPage(new { id = playlistId });
+            }
+
+            if (durationSeconds < 1 || durationSeconds > 3600)
+            {
+                TempData["Error"] = "De duur moet tussen 1 en 3600 seconden liggen.";
+                return RedirectToPage(new { id = playlistId });
+            }
+
             var current = await _playlists.GetByIdAsync(playlistId);
-            var nextOrder = current?.Items.Count ?? 0;
+            if (current is null) return NotFound();
+            if (current.Screen is null) return NotFound();
+
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != current.Screen.DepartmentId)
+                    return Forbid();
+            }
+
+            var nextOrder = current.Items.Count;
 
             var item = new PlaylistItem
             {
@@ -124,7 +179,23 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
 
         public async Task<IActionResult> OnPostRemoveItemAsync(int itemId, int playlistId)
         {
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
+            var playlist = await _playlists.GetByIdAsync(playlistId);
+            if (playlist is null) return NotFound();
+            if (playlist.Screen is null) return NotFound();
+
+            if (!playlist.Items.Any(i => i.Id == itemId))
+                return NotFound();
+
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != playlist.Screen.DepartmentId)
+                    return Forbid();
+            }
+
             await _playlists.RemoveItemAsync(itemId, userId);
             return RedirectToPage(new { id = playlistId });
         }

@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using NarrowCasting_V5.Data;
 using NarrowCasting_V5.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace NarrowCasting_V5.Pages.Admin.Dashboard
 {
@@ -13,8 +12,13 @@ namespace NarrowCasting_V5.Pages.Admin.Dashboard
     public class IndexModel : PageModel
     {
         private readonly ApplicationDbContext _db;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public IndexModel(ApplicationDbContext db) => _db = db;
+        public IndexModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            _db = db;
+            _userManager = userManager;
+        }
 
         public int DepartmentCount { get; set; }
         public int ScreenCount { get; set; }
@@ -36,23 +40,11 @@ namespace NarrowCasting_V5.Pages.Admin.Dashboard
             }
             else
             {
-                // Employee: get their department id from Identity claims
-                var user = await _db.Users
-                    .FirstOrDefaultAsync(u => u.UserName == User.Identity!.Name);
-
-                int? deptId = null;
-                if (user != null)
-                {
-                    // Try to get DepartmentId via reflection if it exists
-                    var prop = user.GetType().GetProperty("DepartmentId");
-                    if (prop != null)
-                    {
-                        deptId = prop.GetValue(user) as int?;
-                    }
-                }
+                var user = await _userManager.GetUserAsync(User);
+                var deptId = user?.DepartmentId;
 
                 ScreenCount = await _db.Screens.CountAsync(s => s.DepartmentId == deptId);
-                PlaylistCount = await _db.Playlists.CountAsync(p => p.Screen.DepartmentId == deptId);
+                PlaylistCount = await _db.Playlists.CountAsync(p => p.Screen != null && p.Screen.DepartmentId == deptId);
                 AnnouncementCount = await _db.Announcements.CountAsync(a => a.DepartmentId == deptId);
                 RecentScreens = await _db.Screens.Include(s => s.Department)
                                                       .Where(s => s.DepartmentId == deptId)

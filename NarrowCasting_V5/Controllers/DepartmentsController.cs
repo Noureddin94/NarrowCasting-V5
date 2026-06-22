@@ -38,7 +38,9 @@ namespace NarrowCasting_V5.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             await _departments.CreateAsync(department, userId);
 
             return CreatedAtAction(nameof(GetById), new { id = department.Id }, department);
@@ -54,7 +56,9 @@ namespace NarrowCasting_V5.Controllers
             var existing = await _departments.GetByIdAsync(id);
             if (existing is null) return NotFound();
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             await _departments.UpdateAsync(department, userId);
 
             return NoContent();
@@ -67,7 +71,9 @@ namespace NarrowCasting_V5.Controllers
             var existing = await _departments.GetByIdAsync(id);
             if (existing is null) return NotFound();
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             await _departments.DeleteAsync(id, userId);
 
             return NoContent();

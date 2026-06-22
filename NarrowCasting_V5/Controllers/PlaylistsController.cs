@@ -12,13 +12,15 @@ namespace NarrowCasting_V5.Controllers
     public class PlaylistsController : ControllerBase
     {
         private readonly IPlaylistService _playlists;
+        private readonly IPlaylistItemService _playlistItems;
         private readonly IScreenService _screens;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public PlaylistsController(IPlaylistService playlists, IScreenService screens,
+        public PlaylistsController(IPlaylistService playlists, IPlaylistItemService playlistItems, IScreenService screens,
                                    UserManager<ApplicationUser> userManager)
         {
             _playlists = playlists;
+            _playlistItems = playlistItems;
             _screens = screens;
             _userManager = userManager;
         }
@@ -58,7 +60,9 @@ namespace NarrowCasting_V5.Controllers
                     return Forbid();
             }
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             playlist.CreatedById = userId;
             await _playlists.CreateAsync(playlist, userId);
 
@@ -71,7 +75,19 @@ namespace NarrowCasting_V5.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
+            var playlist = await _playlists.GetByIdAsync(id);
+            if (playlist is null) return NotFound("Playlist niet gevonden.");
+            if (playlist.Screen is null) return BadRequest("Playlist heeft geen gekoppeld scherm.");
+
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != playlist.Screen.DepartmentId)
+                    return Forbid();
+            }
 
             try
             {
@@ -89,7 +105,23 @@ namespace NarrowCasting_V5.Controllers
         [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> RemoveItem(int itemId)
         {
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
+            var item = await _playlistItems.GetByIdAsync(itemId);
+            if (item is null) return NotFound("Playlist item niet gevonden.");
+
+            var playlist = await _playlists.GetByIdAsync(item.PlaylistId);
+            if (playlist is null) return NotFound("Playlist niet gevonden.");
+            if (playlist.Screen is null) return BadRequest("Playlist heeft geen gekoppeld scherm.");
+
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != playlist.Screen.DepartmentId)
+                    return Forbid();
+            }
+
             await _playlists.RemoveItemAsync(itemId, userId);
             return NoContent();
         }

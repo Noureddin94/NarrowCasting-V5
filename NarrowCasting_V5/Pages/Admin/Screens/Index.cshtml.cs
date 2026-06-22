@@ -22,8 +22,8 @@ namespace NarrowCasting_V5.Pages.Admin.Screens
             _userManager = userManager;
         }
 
-        public IEnumerable<Screen> Screens { get; set; } = [];
-        public IEnumerable<Department> Departments { get; set; } = [];
+        public IEnumerable<Screen> Screens { get; set; } = Enumerable.Empty<Screen>();
+        public IEnumerable<Department> Departments { get; set; } = Enumerable.Empty<Department>();
 
         public async Task OnGetAsync()
         {
@@ -39,13 +39,25 @@ namespace NarrowCasting_V5.Pages.Admin.Screens
                 var user = await _userManager.GetUserAsync(User);
                 Screens = user?.DepartmentId.HasValue == true
                     ? await _screens.GetByDepartmentAsync(user.DepartmentId.Value)
-                    : [];
+                    : Enumerable.Empty<Screen>();
             }
         }
 
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
+            var screen = await _screens.GetByIdAsync(id);
+            if (screen is null) return NotFound();
+
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != screen.DepartmentId)
+                    return Forbid();
+            }
+
             await _screens.DeleteAsync(id, userId);
             TempData["Success"] = "Scherm succesvol verwijderd.";
             return RedirectToPage();

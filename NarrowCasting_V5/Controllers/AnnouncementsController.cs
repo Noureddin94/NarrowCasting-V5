@@ -70,7 +70,9 @@ namespace NarrowCasting_V5.Controllers
                     return Forbid("Je kunt alleen aankondigingen aanmaken voor je eigen afdeling.");
             }
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             announcement.CreatedById = userId;
             await _announcements.CreateAsync(announcement, userId);
 
@@ -94,7 +96,9 @@ namespace NarrowCasting_V5.Controllers
                     return Forbid();
             }
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             await _announcements.UpdateAsync(announcement, userId);
 
             return NoContent();
@@ -114,7 +118,9 @@ namespace NarrowCasting_V5.Controllers
                     return Forbid();
             }
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             await _announcements.DeleteAsync(id, userId);
 
             return NoContent();

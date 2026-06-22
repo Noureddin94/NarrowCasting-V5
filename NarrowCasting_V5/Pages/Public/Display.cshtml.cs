@@ -17,7 +17,7 @@ namespace NarrowCasting_V5.Pages.Public
         }
 
         public Screen? Screen { get; set; }
-        public IEnumerable<Announcement> Announcements { get; set; } = [];
+        public IEnumerable<Announcement> Announcements { get; set; } = Enumerable.Empty<Announcement>();
 
         public async Task<IActionResult> OnGetAsync(int screenId)
         {
