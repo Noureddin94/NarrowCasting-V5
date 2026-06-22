@@ -38,6 +38,15 @@ namespace NarrowCasting_V5
             var builder = WebApplication.CreateBuilder(args);
             builder.Host.UseSerilog();
 
+            builder.Host.UseSerilog((context, services, configuration) =>
+            {
+                configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .ReadFrom.Services(services)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console();
+            });
+
             // Database
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -73,6 +82,8 @@ namespace NarrowCasting_V5
             });
 
             // Services
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<IUserContextService, UserContextService>();
             builder.Services.AddScoped<IAuditService, AuditService>();
             builder.Services.AddScoped<IScreenService, ScreenService>();
             builder.Services.AddScoped<IPlaylistService, PlaylistService>();
@@ -189,17 +200,11 @@ namespace NarrowCasting_V5
 
             try
             {
-                Log.Information("Starting web host");
                 await app.RunAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Fatal(ex, "Host terminated unexpectedly");
-                throw;
             }
             finally
             {
-                Log.CloseAndFlush();
+                await Log.CloseAndFlushAsync();
             }
         }
     }

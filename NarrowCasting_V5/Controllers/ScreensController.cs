@@ -55,7 +55,9 @@ namespace NarrowCasting_V5.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             await _screens.CreateAsync(screen, userId);
 
             return CreatedAtAction(nameof(GetById), new { id = screen.Id }, screen);
@@ -71,7 +73,9 @@ namespace NarrowCasting_V5.Controllers
             var existing = await _screens.GetByIdAsync(id);
             if (existing is null) return NotFound();
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             await _screens.UpdateAsync(screen, userId);
 
             return NoContent();
@@ -84,7 +88,9 @@ namespace NarrowCasting_V5.Controllers
             var existing = await _screens.GetByIdAsync(id);
             if (existing is null) return NotFound();
 
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
             await _screens.DeleteAsync(id, userId);
 
             return NoContent();

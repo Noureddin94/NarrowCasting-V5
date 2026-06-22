@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using NarrowCasting_V5.Enums;
 using NarrowCasting_V5.Interfaces;
 using NarrowCasting_V5.Models;
 using System.ComponentModel.DataAnnotations;
@@ -18,7 +19,9 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
         private readonly IWebHostEnvironment _env;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<CreateModel> _logger;
-        private const long MaxUploadBytes = 10 * 1024 * 1024;
+        private const long MaxImageUploadBytes = 10 * 1024 * 1024;
+        private const long MaxVideoUploadBytes = 250 * 1024 * 1024;
+        private const long MaxAudioUploadBytes = 50 * 1024 * 1024;
 
         public CreateModel(
             IMediaFileService mediaFiles,
@@ -33,8 +36,15 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
         }
 
         [BindProperty]
-        [Required]
+        [MaxLength(10000)]
+        public string? TextContent { get; set; }
+
+        [BindProperty]
         public IFormFile? Upload { get; set; }
+
+        [BindProperty]
+        [Required(ErrorMessage = "Selecteer een mediatype.")]
+        public MediaType SelectedMediaType { get; set; } = MediaType.Image;
 
         [BindProperty]
         [MaxLength(500)]
@@ -46,91 +56,143 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
 
         public async Task<IActionResult> OnPostAsync()
         {
-            if (Upload is null)
+            // --- Validation ---
+            if (SelectedMediaType != MediaType.Text && Upload is null)
             {
                 ModelState.AddModelError("Upload", "Select a file to upload.");
+            }
+            if (SelectedMediaType == MediaType.Text && string.IsNullOrWhiteSpace(TextContent))
+            {
+                ModelState.AddModelError("TextContent", "Please enter some text.");
             }
 
             if (!ModelState.IsValid)
                 return Page();
 
+            if (!IsSupportedMediaType(SelectedMediaType))
+            {
+                ModelState.AddModelError("SelectedMediaType", "Selecteer image, video, audio of text.");
+                return Page();
+            }
+
+            // --- Handle file-based media ---
+            if (SelectedMediaType != MediaType.Text)
+            {
             if (Upload!.Length == 0)
             {
                 ModelState.AddModelError("Upload", "The selected file is empty.");
                 return Page();
             }
 
-            if (Upload.Length > MaxUploadBytes)
+                var ext = Path.GetExtension(Upload.FileName);
+                var rules = GetUploadRules(SelectedMediaType);
+
+                if (Upload.Length > rules.MaxBytes)
             {
-                ModelState.AddModelError("Upload", "The file is too large. Maximum size is 10 MB.");
+                    ModelState.AddModelError("Upload", $"Het bestand is te groot. Maximum is {rules.MaxMegabytes} MB voor {SelectedMediaType.ToString().ToLowerInvariant()}.");
                 return Page();
             }
 
-            var allowedContentTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                if (!rules.ContentTypeSet.Contains(Upload.ContentType) || !rules.ExtensionSet.Contains(ext))
             {
-                "image/jpeg",
-                "image/png",
-                "image/gif",
-                "image/webp"
-            };
-            var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".gif",
-                ".webp"
-            };
-            var ext = Path.GetExtension(Upload.FileName);
-
-            if (!allowedContentTypes.Contains(Upload.ContentType) || !allowedExtensions.Contains(ext))
-            {
-                ModelState.AddModelError("Upload", "Only image files (jpg, png, gif, webp) are allowed.");
-                return Page();
+                    ModelState.AddModelError("Upload", rules.ErrorMessage);
+                    return Page();
+                }
             }
 
-            var uploadsRoot = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads");
-            var fileName = Guid.NewGuid().ToString("N") + ext;
-            var filePath = Path.Combine(uploadsRoot, fileName);
-            var webPath = "/uploads/" + fileName;
-            var originalFileName = Path.GetFileName(Upload.FileName);
+            // --- Build the MediaFile entity ---
             var userId = _userManager.GetUserId(User);
-
             var mf = new MediaFile
             {
-                FileName = originalFileName,
-                FilePath = webPath,
-                MediaType = Enums.MediaType.Image,
+                FileName = SelectedMediaType == MediaType.Text ? "Text" : Path.GetFileName(Upload!.FileName),
+                FilePath = null,
+                MediaType = SelectedMediaType,
                 UploadedById = userId,
-                Caption = Caption
+                Caption = Caption,
+                TextContent = TextContent
             };
+
+            if (SelectedMediaType != MediaType.Text)
+            {
+                // --- Save the uploaded file ---
+                var uploadsRoot = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads");
+                var fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(Upload!.FileName);
+                var filePath = Path.Combine(uploadsRoot, fileName);
+                var webPath = "/uploads/" + fileName;
+                
+                mf.FilePath = webPath;
+
+                try
+                {
+                    Directory.CreateDirectory(uploadsRoot);
+                        await using var stream = System.IO.File.Create(filePath);
+                        await Upload.CopyToAsync(stream);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to upload media file {FileName}", mf.FileName);
+                    if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+                    ModelState.AddModelError("Upload", "Upload failed. Please try again or choose another file.");
+                    return Page();
+                }
+            }
+            else
+                {
+                // Text does not have a file path – you can leave FilePath null or empty
+                mf.FilePath = null;
+                }
 
             try
             {
-                Directory.CreateDirectory(uploadsRoot);
-
-                await using (var stream = System.IO.File.Create(filePath))
-                {
-                    await Upload.CopyToAsync(stream);
-                }
-
                 await _mediaFiles.CreateAsync(mf);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to upload media file {FileName}", originalFileName);
-
-                if (System.IO.File.Exists(filePath))
-                {
-                    System.IO.File.Delete(filePath);
-                }
-
-                ModelState.AddModelError("Upload", "Upload failed. Please try again or choose another image.");
+                _logger.LogError(ex, "Failed to create media record");
+                ModelState.AddModelError("", "Something went wrong saving the record.");
                 return Page();
             }
 
             TempData["Success"] = "Bestand geupload.";
             return RedirectToPage("/Admin/MediaFiles/Index");
+        }
+
+        private static bool IsSupportedMediaType(MediaType mediaType) =>
+            mediaType is MediaType.Image or MediaType.Video or MediaType.Audio or MediaType.Text;
+
+        private static UploadRules GetUploadRules(MediaType mediaType)
+        {
+            return mediaType switch
+            {
+                MediaType.Image => new UploadRules(
+                    MaxImageUploadBytes,
+                    new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" },
+                    new[] { "image/jpeg", "image/png", "image/gif", "image/webp" },
+                    "Only image files (jpg, png, gif, webp) are allowed."),
+                MediaType.Video => new UploadRules(
+                    MaxVideoUploadBytes,
+                    new[] { ".mp4", ".webm", ".mov", ".m4v" },
+                    new[] { "video/mp4", "video/webm", "video/quicktime", "video/x-m4v" },
+                    "Only video files (mp4, webm, mov, m4v) are allowed."),
+                MediaType.Audio => new UploadRules(
+                    MaxAudioUploadBytes,
+                    new[] { ".mp3", ".wav", ".ogg", ".m4a" },
+                    new[] { "audio/mpeg", "audio/wav", "audio/x-wav", "audio/ogg", "audio/mp4", "audio/x-m4a" },
+                    "Only audio files (mp3, wav, ogg, m4a) are allowed."),
+                _ => throw new ArgumentOutOfRangeException(nameof(mediaType), mediaType, null)
+            };
+        }
+
+        private sealed record UploadRules(
+            long MaxBytes,
+            IEnumerable<string> Extensions,
+            IEnumerable<string> ContentTypes,
+            string ErrorMessage)
+        {
+            public long MaxMegabytes => MaxBytes / 1024 / 1024;
+
+            public HashSet<string> ExtensionSet => new(Extensions, StringComparer.OrdinalIgnoreCase);
+            public HashSet<string> ContentTypeSet => new(ContentTypes, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

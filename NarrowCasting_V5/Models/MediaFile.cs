@@ -7,18 +7,20 @@ namespace NarrowCasting_V5.Models
     {
         public int Id { get; set; }
 
-        [Required, MaxLength(255)]
+        [MaxLength(255)]
         public string FileName { get; set; } = string.Empty;
 
-        [Required, MaxLength(500)]
+        [MaxLength(500)]
         public string FilePath { get; set; } = string.Empty;
+
+        [MaxLength(10000)]
+        public string? TextContent { get; set; }
 
         public MediaType MediaType { get; set; }
 
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 
         // FK
-        [Required]
         public string? UploadedById { get; set; }
 
         // Navigation properties

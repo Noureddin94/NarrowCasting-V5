@@ -45,7 +45,19 @@ namespace NarrowCasting_V5.Pages.Admin.Screens
 
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
-            var userId = _userManager.GetUserId(User)!;
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Challenge();
+
+            var screen = await _screens.GetByIdAsync(id);
+            if (screen is null) return NotFound();
+
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != screen.DepartmentId)
+                    return Forbid();
+            }
+
             await _screens.DeleteAsync(id, userId);
             TempData["Success"] = "Scherm succesvol verwijderd.";
             return RedirectToPage();

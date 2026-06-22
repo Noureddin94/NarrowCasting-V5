@@ -72,7 +72,8 @@ namespace NarrowCasting_V5.Pages.Admin.Screens
                 var entries = ModelState.Select(kvp => new
                 {
                     Key = kvp.Key,
-                    Errors = kvp.Value.Errors.Select(e => e.ErrorMessage).Where(s => !string.IsNullOrEmpty(s)).ToArray()
+                    Errors = kvp.Value?.Errors.Select(e => e.ErrorMessage).Where(s => !string.IsNullOrEmpty(s)).ToArray()
+                        ?? Array.Empty<string>()
                 }).Where(e => e.Errors.Any()).ToArray();
 
                 var details = string.Join("; ", entries.Select(e => $"{e.Key}: {string.Join(",", e.Errors)}"));

@@ -19,7 +19,7 @@ namespace NarrowCasting_V5.Services
 
         public async Task<IEnumerable<Playlist>> GetAllAsync()
         {
-            return await _db.Playlists.Include(p => p.Screen).ThenInclude(s => s.Department)
+            return await _db.Playlists.Include(p => p.Screen!).ThenInclude(s => s.Department)
                                       .Include(p => p.Items)
                                       .OrderByDescending(p => p.CreatedAt)
                                       .ToListAsync();
@@ -27,9 +27,9 @@ namespace NarrowCasting_V5.Services
 
         public async Task<IEnumerable<Playlist>> GetByDepartmentAsync(int departmentId)
         {
-            return await _db.Playlists.Include(p => p.Screen).ThenInclude(s => s.Department)
+            return await _db.Playlists.Include(p => p.Screen!).ThenInclude(s => s.Department)
                                       .Include(p => p.Items)
-                                      .Where(p => p.Screen.DepartmentId == departmentId)
+                                      .Where(p => p.Screen != null && p.Screen.DepartmentId == departmentId)
                                       .OrderByDescending(p => p.CreatedAt)
                                       .ToListAsync();
         }

@@ -8,10 +8,12 @@ namespace NarrowCasting_V5.Services
     public class MediaFileService : IMediaFileService
     {
         private readonly ApplicationDbContext _db;
+        private readonly IAuditService _audit;
 
-        public MediaFileService(ApplicationDbContext db)
+        public MediaFileService(ApplicationDbContext db, IAuditService audit)
         {
             _db = db;
+            _audit = audit;
         }
 
         public async Task<IEnumerable<MediaFile>> GetAllOrderedAsync()
@@ -23,6 +25,26 @@ namespace NarrowCasting_V5.Services
         {
             _db.MediaFiles.Add(file);
             await _db.SaveChangesAsync();
+        }
+
+        public async Task<(bool Success, string? Error)> DeleteAsync(int id , string userId)
+        {
+            var media = await _db.MediaFiles
+                .Include(m => m.PlaylistItems)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (media is null)
+                return (false, "Media not found");
+
+            if (media.PlaylistItems.Any())
+            {
+                return (false, "Cannot delete media that is used in playlists.");
+            }
+
+            _db.MediaFiles.Remove(media);
+            await _db.SaveChangesAsync();
+            await _audit.LogAsync("MediaFile", id, "Delete", userId);
+            return (true, null);
         }
     }
 }
