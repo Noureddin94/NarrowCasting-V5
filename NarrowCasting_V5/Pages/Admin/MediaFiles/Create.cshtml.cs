@@ -105,7 +105,7 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
             var mf = new MediaFile
             {
                 FileName = SelectedMediaType == MediaType.Text ? "Text" : Path.GetFileName(Upload!.FileName),
-                FilePath = null,
+                FilePath = string.Empty,
                 MediaType = SelectedMediaType,
                 UploadedById = userId,
                 Caption = Caption,
@@ -138,8 +138,8 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
             }
             else
                 {
-                // Text does not have a file path – you can leave FilePath null or empty
-                mf.FilePath = null;
+                // Text does not have a file path ï¿½ you can leave FilePath null or empty
+                mf.FilePath = string.Empty;
                 }
 
             try
@@ -196,3 +196,4 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
         }
     }
 }
+

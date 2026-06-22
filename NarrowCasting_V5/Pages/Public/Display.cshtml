@@ -29,14 +29,17 @@
         .nc-topbar .dept-badge  { background: rgba(255,255,255,.15); border-radius: 20px;
                                    padding: .2rem .8rem; font-size: .8rem; }
 
-        /* Content area */
-        .nc-content { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+        .nc-content { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .slide-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .slide-video { background: #000; }
+        .slide-audio { width: min(760px, 80vw); position: relative; z-index: 2; }
+        .slide-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.65)); }
 
-        /* Announcement card */
         .ann-card {
-            background: rgba(255,255,255,.08); backdrop-filter: blur(12px);
+            position: relative; z-index: 2;
+            background: rgba(0,0,0,.42); backdrop-filter: blur(12px);
             border: 1px solid rgba(255,255,255,.15);
-            border-radius: 16px; padding: 3rem 4rem; max-width: 800px; text-align: center;
+            border-radius: 16px; padding: 3rem 4rem; max-width: 900px; text-align: center;
             animation: fadeInUp .6s ease;
         }
         .ann-card .ann-dept   { font-size: .85rem; opacity: .6; margin-bottom: .5rem; letter-spacing: .05em; text-transform: uppercase; }
@@ -86,12 +89,16 @@ else
 
         <!-- Main content area -->
         <div class="nc-content">
-            @if (Model.Announcements.Any())
+            @if (Model.Slides.Any())
             {
-                <div class="ann-card" id="annCard">
-                    <div class="ann-dept" id="annDept"></div>
-                    <div class="ann-title" id="annTitle">Laden...</div>
-                    <div class="ann-body" id="annBody"></div>
+                <img class="slide-media d-none" id="slideImage" alt="" />
+                <video class="slide-media slide-video d-none" id="slideVideo" muted autoplay playsinline></video>
+                <div class="slide-overlay d-none" id="slideOverlay"></div>
+                <audio class="slide-audio d-none" id="slideAudio" controls autoplay></audio>
+                <div class="ann-card" id="slideText">
+                    <div class="ann-dept" id="slideDept"></div>
+                    <div class="ann-title" id="slideTitle">Laden...</div>
+                    <div class="ann-body" id="slideBody"></div>
                 </div>
             }
             else
@@ -104,44 +111,84 @@ else
         </div>
 
         <!-- Ticker -->
-        @if (Model.Announcements.Any())
+        @if (Model.Slides.Any())
         {
             <div class="nc-ticker">
                 <span class="ticker-label">INFO</span>
                 <span class="ticker-text">
-                    @string.Join("  •  ", Model.Announcements.Select(a => a.Title))
+                    @string.Join("  •  ", Model.Slides.Select(a => a.Title))
                 </span>
             </div>
         }
     </div>
 
-    @if (Model.Announcements.Any())
+    @if (Model.Slides.Any())
     {
         <script>
             const announcements = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                Model.Announcements.Select(a => new { a.Title, a.Content, dept = a.Department?.Name ?? "" })));
+                Model.Slides.Select(s => new
+                {
+                    title = s.Title,
+                    body = s.Body,
+                    department = s.Department,
+                    filePath = s.FilePath,
+                    mediaType = s.MediaType,
+                    durationMs = s.DurationMs
+                })));
 
             let current = 0;
-            const DURATION = 8000; // 8 seconds per slide
+            const DEFAULT_DURATION = 4000;
+            let slideTimer = null;
 
             function showAnnouncement(index) {
                 const a = announcements[index];
-                const card = document.getElementById('annCard');
+                const card = document.getElementById('slideText');
+                const image = document.getElementById('slideImage');
+                const video = document.getElementById('slideVideo');
+                const audio = document.getElementById('slideAudio');
+                const overlay = document.getElementById('slideOverlay');
+
+                image.classList.add('d-none');
+                video.classList.add('d-none');
+                audio.classList.add('d-none');
+                overlay.classList.add('d-none');
+                video.pause();
+                audio.pause();
+                video.removeAttribute('src');
+                audio.removeAttribute('src');
+
+                if (a.filePath && a.mediaType === 'Image') {
+                    image.src = a.filePath;
+                    image.classList.remove('d-none');
+                    overlay.classList.remove('d-none');
+                } else if (a.filePath && a.mediaType === 'Video') {
+                    video.src = a.filePath;
+                    video.classList.remove('d-none');
+                    video.play();
+                } else if (a.filePath && a.mediaType === 'Audio') {
+                    audio.src = a.filePath;
+                    audio.classList.remove('d-none');
+                    audio.play();
+                }
+
                 card.style.animation = 'none';
                 void card.offsetWidth; // reflow
                 card.style.animation = 'fadeInUp .6s ease';
 
-                document.getElementById('annDept').textContent  = a.dept;
-                document.getElementById('annTitle').textContent = a.title;
-                document.getElementById('annBody').textContent  = a.content;
+                document.getElementById('slideDept').textContent  = a.department ?? '';
+                document.getElementById('slideTitle').textContent = a.title ?? '';
+                document.getElementById('slideBody').textContent  = a.body ?? '';
 
-                // Progress bar
+                const duration = a.durationMs || DEFAULT_DURATION;
                 const bar = document.getElementById('progressBar');
                 bar.style.transition = 'none';
                 bar.style.width = '0%';
                 void bar.offsetWidth;
-                bar.style.transition = `width ${DURATION}ms linear`;
+                bar.style.transition = `width ${duration}ms linear`;
                 bar.style.width = '100%';
+
+                window.clearTimeout(slideTimer);
+                slideTimer = window.setTimeout(next, duration);
             }
 
             function next() {
@@ -150,7 +197,6 @@ else
             }
 
             showAnnouncement(0);
-            setInterval(next, DURATION);
 
             // Clock
             function updateClock() {
