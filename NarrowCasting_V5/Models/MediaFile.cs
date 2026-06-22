@@ -23,6 +23,9 @@ namespace NarrowCasting_V5.Models
 
         // Navigation properties
         public ApplicationUser? UploadedBy { get; set; }
-        public ICollection<PlaylistItem> PlaylistItems { get; set; } = [];
+        public ICollection<PlaylistItem> PlaylistItems { get; set; } = new List<PlaylistItem>();
+
+        [MaxLength(500)]
+        public string? Caption { get; set; }
     }
 }

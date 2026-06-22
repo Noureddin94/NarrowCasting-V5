@@ -46,7 +46,7 @@
                     <div class="mb-3">
                         <label asp-for="Playlist.ScreenId" class="form-label fw-medium small">Scherm *</label>
                         <select asp-for="Playlist.ScreenId" class="form-select" asp-items="@Model.ScreenSelectList">
-                            <option value="">– Selecteer scherm –</option>
+                            <option value="0">– Selecteer scherm –</option>
                         </select>
                         <span asp-validation-for="Playlist.ScreenId" class="text-danger small"></span>
                     </div>

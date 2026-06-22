@@ -16,8 +16,8 @@ namespace NarrowCasting_V5.Pages.Public
             _screens = screens;
         }
 
-        public IEnumerable<Department> Departments { get; set; } = [];
-        public IEnumerable<Screen> Screens { get; set; } = [];
+        public IEnumerable<Department> Departments { get; set; } = Enumerable.Empty<Department>();
+        public IEnumerable<Screen> Screens { get; set; } = Enumerable.Empty<Screen>();
         public string? SelectedDepartment { get; set; }
 
         public async Task OnGetAsync(string? dept)

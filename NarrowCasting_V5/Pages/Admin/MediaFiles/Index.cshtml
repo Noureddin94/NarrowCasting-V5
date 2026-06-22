@@ -1,0 +1,38 @@
+@page
+@model NarrowCasting_V5.Pages.Admin.MediaFiles.IndexModel
+@{
+    ViewData["Title"] = "Mediabestanden";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-1">
+    <div>
+        <h1 class="page-title">Mediabestanden</h1>
+    </div>
+    <a asp-page="/Admin/MediaFiles/Create" class="btn btn-primary">Uploaden</a>
+</div>
+
+<div class="row g-3">
+    @foreach (var mf in Model.MediaFiles)
+    {
+        <div class="col-3">
+            <div class="card">
+                @if (!string.IsNullOrEmpty(mf.FilePath))
+                {
+                    <img src="@mf.FilePath" class="card-img-top" alt="@mf.Caption" />
+                }
+                else
+                {
+                    <div class="card-img-top d-flex align-items-center justify-content-center" style="height:160px;background:#f1f3f6;">
+                        <i class="bi bi-file-earmark-text" style="font-size:2rem;color:#6c757d"></i>
+                    </div>
+                }
+
+                <div class="card-body p-2 small">
+                    <div class="fw-medium">@mf.FileName</div>
+                    <div class="text-muted">@mf.UploadedAt.ToLocalTime()</div>
+                    @if (!string.IsNullOrEmpty(mf.Caption)) { <div class="mt-1">@mf.Caption</div> }
+                </div>
+            </div>
+        </div>
+    }
+</div>

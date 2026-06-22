@@ -41,7 +41,8 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
             ScreenSelectList = new SelectList(screens, "Id", "Name");
 
             var mediaFiles = await _mediaFiles.GetAllOrderedAsync();
-            MediaFileSelectList = new SelectList(mediaFiles, "Id", "FileName");
+            var mediaItems = mediaFiles.Select(m => new { m.Id, Text = m.FileName + (string.IsNullOrEmpty(m.Caption) ? "" : " - " + m.Caption) });
+            MediaFileSelectList = new SelectList(mediaItems, "Id", "Text");
         }
 
         private async Task<IEnumerable<Screen>> GetEmployeeScreensAsync()
@@ -49,7 +50,7 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
             var user = await _userManager.GetUserAsync(User);
             return user?.DepartmentId.HasValue == true
                 ? await _screens.GetByDepartmentAsync(user.DepartmentId.Value)
-                : [];
+                : Enumerable.Empty<Screen>();
         }
 
         public async Task<IActionResult> OnGetAsync(int? id)
@@ -90,7 +91,23 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
                 return RedirectToPage(new { id = Playlist.Id });
             }
 
-            await _playlists.UpdateAsync(Playlist, userId);
+            // For updates, load existing entity and copy only editable scalar fields to avoid
+            // unintentionally overwriting navigation collections (Items) which are not part of the details form.
+            var existing = await _playlists.GetByIdAsync(Playlist.Id);
+            if (existing is null) return NotFound();
+
+            // permission check for employee
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != existing.Screen.DepartmentId)
+                    return Forbid();
+            }
+
+            existing.Name = Playlist.Name;
+            existing.ScreenId = Playlist.ScreenId;
+
+            await _playlists.UpdateAsync(existing, userId);
             TempData["Success"] = "Playlist bijgewerkt.";
             return RedirectToPage(new { id = Playlist.Id });
         }

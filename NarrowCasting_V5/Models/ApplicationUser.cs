@@ -16,9 +16,9 @@ namespace NarrowCasting_V5.Models
 
         // Navigation
         public Department? Department { get; set; }
-        public ICollection<AuditLog> AuditLogs { get; set; } = [];
-        public ICollection<MediaFile> UploadedFiles { get; set; } = [];
-        public ICollection<Playlist> CreatedPlaylists { get; set; } = [];
-        public ICollection<Announcement> CreatedAnnouncements { get; set; } = [];
+        public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
+        public ICollection<MediaFile> UploadedFiles { get; set; } = new List<MediaFile>();
+        public ICollection<Playlist> CreatedPlaylists { get; set; } = new List<Playlist>();
+        public ICollection<Announcement> CreatedAnnouncements { get; set; } = new List<Announcement>();
     }
 }

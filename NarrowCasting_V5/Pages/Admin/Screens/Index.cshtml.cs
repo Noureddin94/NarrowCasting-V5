@@ -22,8 +22,8 @@ namespace NarrowCasting_V5.Pages.Admin.Screens
             _userManager = userManager;
         }
 
-        public IEnumerable<Screen> Screens { get; set; } = [];
-        public IEnumerable<Department> Departments { get; set; } = [];
+        public IEnumerable<Screen> Screens { get; set; } = Enumerable.Empty<Screen>();
+        public IEnumerable<Department> Departments { get; set; } = Enumerable.Empty<Department>();
 
         public async Task OnGetAsync()
         {
@@ -39,7 +39,7 @@ namespace NarrowCasting_V5.Pages.Admin.Screens
                 var user = await _userManager.GetUserAsync(User);
                 Screens = user?.DepartmentId.HasValue == true
                     ? await _screens.GetByDepartmentAsync(user.DepartmentId.Value)
-                    : [];
+                    : Enumerable.Empty<Screen>();
             }
         }
 

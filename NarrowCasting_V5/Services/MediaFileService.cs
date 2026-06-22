@@ -18,5 +18,11 @@ namespace NarrowCasting_V5.Services
         {
             return await _db.MediaFiles.OrderByDescending(m => m.UploadedAt).ToListAsync();
         }
+
+        public async Task CreateAsync(MediaFile file)
+        {
+            _db.MediaFiles.Add(file);
+            await _db.SaveChangesAsync();
+        }
     }
 }

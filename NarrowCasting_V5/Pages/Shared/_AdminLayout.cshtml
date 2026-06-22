@@ -264,6 +264,10 @@
            asp-page="/Admin/Playlists/Index">
             <i class="bi bi-collection-play"></i> Playlists
         </a>
+        <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString()?.StartsWith("/Admin/MediaFiles") == true ? "active" : "")"
+           asp-page="/Admin/MediaFiles/Index">
+            <i class="bi bi-images"></i> Mediabestanden
+        </a>
         <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString()?.StartsWith("/Admin/Announcements") == true ? "active" : "")"
            asp-page="/Admin/Announcements/Index">
             <i class="bi bi-megaphone"></i> Aankondigingen
