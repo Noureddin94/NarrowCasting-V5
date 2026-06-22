@@ -12,7 +12,31 @@ namespace NarrowCasting_V5
     {
         public static async Task Main(string[] args)
         {
+            // Configure Serilog early so startup errors are captured
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
+                .CreateLogger();
+            // Capture unhandled exceptions from AppDomain and TaskScheduler
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                try { Log.Fatal((Exception?)e.ExceptionObject, "Unhandled domain exception"); }
+                catch { }
+            };
+
+            TaskScheduler.UnobservedTaskException += (s, e) =>
+            {
+                try
+                {
+                    Log.Fatal(e.Exception, "Unobserved task exception");
+                    e.SetObserved();
+                }
+                catch { }
+            };
+
             var builder = WebApplication.CreateBuilder(args);
+            builder.Host.UseSerilog();
 
             builder.Host.UseSerilog((context, services, configuration) =>
             {
@@ -164,7 +188,7 @@ namespace NarrowCasting_V5
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
-            //app.UseSerilogRequestLogging();
+            app.UseSerilogRequestLogging();
             
             app.UseAuthentication();
             app.UseAuthorization();

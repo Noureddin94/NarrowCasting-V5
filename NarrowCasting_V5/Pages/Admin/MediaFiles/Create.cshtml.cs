@@ -78,23 +78,23 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
             // --- Handle file-based media ---
             if (SelectedMediaType != MediaType.Text)
             {
-                if (Upload!.Length == 0)
-                {
-                    ModelState.AddModelError("Upload", "The selected file is empty.");
-                    return Page();
-                }
+            if (Upload!.Length == 0)
+            {
+                ModelState.AddModelError("Upload", "The selected file is empty.");
+                return Page();
+            }
 
                 var ext = Path.GetExtension(Upload.FileName);
                 var rules = GetUploadRules(SelectedMediaType);
 
                 if (Upload.Length > rules.MaxBytes)
-                {
+            {
                     ModelState.AddModelError("Upload", $"Het bestand is te groot. Maximum is {rules.MaxMegabytes} MB voor {SelectedMediaType.ToString().ToLowerInvariant()}.");
-                    return Page();
-                }
+                return Page();
+            }
 
                 if (!rules.ContentTypeSet.Contains(Upload.ContentType) || !rules.ExtensionSet.Contains(ext))
-                {
+            {
                     ModelState.AddModelError("Upload", rules.ErrorMessage);
                     return Page();
                 }
@@ -104,7 +104,7 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
             var userId = _userManager.GetUserId(User);
             var mf = new MediaFile
             {
-                FileName = SelectedMediaType == MediaType.Text ? null : Upload!.FileName,
+                FileName = SelectedMediaType == MediaType.Text ? "Text" : Path.GetFileName(Upload!.FileName),
                 FilePath = null,
                 MediaType = SelectedMediaType,
                 UploadedById = userId,
@@ -119,15 +119,14 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
                 var fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(Upload!.FileName);
                 var filePath = Path.Combine(uploadsRoot, fileName);
                 var webPath = "/uploads/" + fileName;
-
+                
                 mf.FilePath = webPath;
-                mf.FileName = Path.GetFileName(Upload.FileName);
 
                 try
                 {
                     Directory.CreateDirectory(uploadsRoot);
-                    await using var stream = System.IO.File.Create(filePath);
-                    await Upload.CopyToAsync(stream);
+                        await using var stream = System.IO.File.Create(filePath);
+                        await Upload.CopyToAsync(stream);
                 }
                 catch (Exception ex)
                 {
@@ -138,10 +137,10 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
                 }
             }
             else
-            {
+                {
                 // Text does not have a file path – you can leave FilePath null or empty
                 mf.FilePath = null;
-            }
+                }
 
             try
             {

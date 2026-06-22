@@ -41,7 +41,8 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
             ScreenSelectList = new SelectList(screens, "Id", "Name");
 
             var mediaFiles = await _mediaFiles.GetAllOrderedAsync();
-            MediaFileSelectList = new SelectList(mediaFiles, "Id", "FileName");
+            var mediaItems = mediaFiles.Select(m => new { m.Id, Text = m.FileName + (string.IsNullOrEmpty(m.Caption) ? "" : " - " + m.Caption) });
+            MediaFileSelectList = new SelectList(mediaItems, "Id", "Text");
         }
 
         private async Task<IEnumerable<Screen>> GetEmployeeScreensAsync()
@@ -49,7 +50,7 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
             var user = await _userManager.GetUserAsync(User);
             return user?.DepartmentId.HasValue == true
                 ? await _screens.GetByDepartmentAsync(user.DepartmentId.Value)
-                : [];
+                : Enumerable.Empty<Screen>();
         }
 
         public async Task<IActionResult> OnGetAsync(int? id)
@@ -111,6 +112,14 @@ namespace NarrowCasting_V5.Pages.Admin.Playlists
             var existing = await _playlists.GetByIdAsync(Playlist.Id);
             if (existing is null) return NotFound();
             if (existing.Screen is null) return NotFound();
+
+            // permission check for employee
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId != existing.Screen.DepartmentId)
+                    return Forbid();
+            }
 
             // permission check for employee
             if (!User.IsInRole("Admin"))
