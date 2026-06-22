@@ -138,10 +138,23 @@ namespace NarrowCasting_V5.Data
                  .HasForeignKey(a => a.DepartmentId)
                  .OnDelete(DeleteBehavior.Restrict);
 
+                e.HasOne(a => a.Screen)
+                 .WithMany()
+                 .HasForeignKey(a => a.ScreenId)
+                 .OnDelete(DeleteBehavior.Restrict)
+                 .IsRequired(false);
+
+                e.HasOne(a => a.MediaFile)
+                 .WithMany()
+                 .HasForeignKey(a => a.MediaFileId)
+                 .OnDelete(DeleteBehavior.SetNull)
+                 .IsRequired(false);
+
                 e.HasOne(a => a.CreatedBy)
                  .WithMany(u => u.CreatedAnnouncements)
                  .HasForeignKey(a => a.CreatedById)
-                 .OnDelete(DeleteBehavior.Restrict);
+                 .OnDelete(DeleteBehavior.Restrict)
+                 .IsRequired(false);
             });
 
             // AuditLog

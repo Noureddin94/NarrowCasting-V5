@@ -20,10 +20,14 @@ namespace NarrowCasting_V5.Models
 
         // FK
         public int DepartmentId { get; set; }
+        public int? ScreenId { get; set; }
+        public int? MediaFileId { get; set; }
         public string? CreatedById { get; set; }
 
         // Navigation properties
-        public Department Department { get; set; } = null!;
+        public Department? Department { get; set; }
+        public Screen? Screen { get; set; }
+        public MediaFile? MediaFile { get; set; }
         public ApplicationUser? CreatedBy { get; set; }
     }
 }

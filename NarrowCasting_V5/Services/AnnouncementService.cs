@@ -19,6 +19,8 @@ namespace NarrowCasting_V5.Services
         public async Task<IEnumerable<Announcement>> GetAllAsync()
         {
             return await _db.Announcements.Include(a => a.Department)
+                                          .Include(a => a.Screen)
+                                          .Include(a => a.MediaFile)
                                           .Include(a => a.CreatedBy)  
                                           .OrderByDescending(a => a.PublishedAt)
                                           .ToListAsync();
@@ -27,6 +29,8 @@ namespace NarrowCasting_V5.Services
         public async Task<IEnumerable<Announcement>> GetActiveAsync()
         {
             return await _db.Announcements.Include(a => a.Department)
+                                          .Include(a => a.Screen)
+                                          .Include(a => a.MediaFile)
                                           .Where(a => a.ExpiresAt == null || a.ExpiresAt > DateTime.Now)
                                           .ToListAsync();
         }
@@ -34,14 +38,32 @@ namespace NarrowCasting_V5.Services
         public async Task<IEnumerable<Announcement>> GetActiveForDepartmentAsync(int departmentId)
         {
             return await _db.Announcements.Include(a => a.Department)
+                                          .Include(a => a.Screen)
+                                          .Include(a => a.MediaFile)
                                           .Where(a => a.DepartmentId == departmentId 
                                                 && (a.ExpiresAt == null || a.ExpiresAt > DateTime.Now))
                                           .ToListAsync();
         }
 
+        public async Task<IEnumerable<Announcement>> GetActiveForScreenAsync(int screenId, int departmentId, bool includeInternal)
+        {
+            return await _db.Announcements
+                .Include(a => a.Department)
+                .Include(a => a.Screen)
+                .Include(a => a.MediaFile)
+                .Where(a => a.DepartmentId == departmentId)
+                .Where(a => a.ScreenId == null || a.ScreenId == screenId)
+                .Where(a => includeInternal || !a.IsInternal)
+                .Where(a => a.ExpiresAt == null || a.ExpiresAt > DateTime.Now)
+                .OrderByDescending(a => a.PublishedAt)
+                .ToListAsync();
+        }
+
         public async Task<Announcement?> GetByIdAsync(int id)
         {
             return await _db.Announcements.Include(a => a.Department)
+                                          .Include(a => a.Screen)
+                                          .Include(a => a.MediaFile)
                                           .FirstOrDefaultAsync(a => a.Id == id);
         }
 

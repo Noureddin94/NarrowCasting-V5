@@ -52,6 +52,25 @@
                         </div>
                     </div>
 
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Item.ScreenId" class="form-label fw-medium small">Scherm</label>
+                            <select asp-for="Item.ScreenId" class="form-select"
+                                    asp-items="@Model.ScreenSelectList">
+                                <option value="">Alle schermen van de afdeling</option>
+                            </select>
+                            <span asp-validation-for="Item.ScreenId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Item.MediaFileId" class="form-label fw-medium small">Media</label>
+                            <select asp-for="Item.MediaFileId" class="form-select"
+                                    asp-items="@Model.MediaFileSelectList">
+                                <option value="">Geen media</option>
+                            </select>
+                            <span asp-validation-for="Item.MediaFileId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
                     <div class="mb-4 form-check form-switch">
                         <input asp-for="Item.IsInternal" class="form-check-input" role="switch" />
                         <label asp-for="Item.IsInternal" class="form-check-label small">
