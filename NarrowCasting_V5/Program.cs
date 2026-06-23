@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using NarrowCasting_V5.Data;
 using NarrowCasting_V5.Interfaces;
 using NarrowCasting_V5.Models;
@@ -186,7 +187,18 @@ namespace NarrowCasting_V5
             }
 
             app.UseHttpsRedirection();
-            app.UseStaticFiles();
+
+            // Ensure the uploads folder exists (outside wwwroot)
+            var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "UploadedFiles");
+            Directory.CreateDirectory(uploadsPath);
+
+            // Serve uploaded files under /uploads
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadsPath),
+                RequestPath = "/uploads"
+            });
+
             app.UseRouting();
             app.UseSerilogRequestLogging();
             

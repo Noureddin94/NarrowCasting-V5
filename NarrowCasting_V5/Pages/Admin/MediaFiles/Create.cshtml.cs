@@ -56,6 +56,7 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
 
         public async Task<IActionResult> OnPostAsync()
         {
+            // Validation
             string? savedFilePath = null;
 
             // --- Validation ---
@@ -77,7 +78,7 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
                 return Page();
             }
 
-            // --- Handle file-based media ---
+            // Handle file-based media
             if (SelectedMediaType != MediaType.Text)
             {
             if (Upload!.Length == 0)
@@ -90,28 +91,29 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
                 var rules = GetUploadRules(SelectedMediaType);
 
                 if (Upload.Length > rules.MaxBytes)
-            {
-                    ModelState.AddModelError("Upload", $"Het bestand is te groot. Maximum is {rules.MaxMegabytes} MB voor {SelectedMediaType.ToString().ToLowerInvariant()}.");
-                return Page();
-            }
+                {
+                    ModelState.AddModelError("Upload", 
+                        $"Het bestand is te groot. Maximum is {rules.MaxMegabytes} MB voor {SelectedMediaType.ToString().ToLowerInvariant()}.");
+                    return Page();
+                }
 
                 if (!rules.ContentTypeSet.Contains(Upload.ContentType) || !rules.ExtensionSet.Contains(ext))
-            {
+                {
                     ModelState.AddModelError("Upload", rules.ErrorMessage);
                     return Page();
                 }
             }
 
-            // --- Build the MediaFile entity ---
+            // Build the MediaFile entity
             var userId = _userManager.GetUserId(User);
-            var mf = new MediaFile
+            var mediaFile = new MediaFile
             {
                 FileName = SelectedMediaType == MediaType.Text ? "Text" : Path.GetFileName(Upload!.FileName),
                 FilePath = string.Empty,
                 MediaType = SelectedMediaType,
                 UploadedById = userId,
                 Caption = Caption,
-                TextContent = TextContent
+                TextContent = SelectedMediaType == MediaType.Text ? TextContent : null
             };
 
             if (SelectedMediaType != MediaType.Text)
@@ -137,13 +139,8 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
                     if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
                     ModelState.AddModelError("Upload", "Upload failed. Please try again or choose another file.");
                     return Page();
-                }
+                mediaFile.FilePath = saved;
             }
-            else
-                {
-                // Text does not have a file path � you can leave FilePath null or empty
-                mf.FilePath = string.Empty;
-                }
 
             try
             {
@@ -163,6 +160,30 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
 
             TempData["Success"] = "Mediabestand geupload.";
             return RedirectToPage("/Admin/MediaFiles/Index");
+        }
+
+        private async Task<string?> SaveUploadedFileAsync(IFormFile file)
+        {
+            var uploadsRoot = Path.Combine(_env.ContentRootPath, "UploadedFiles");
+            var fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(file.FileName);
+            var filePath = Path.Combine(uploadsRoot, fileName);
+            var webPath = "/uploads/" + fileName;
+
+            try
+            {
+                Directory.CreateDirectory(uploadsRoot);
+                await using var stream = new FileStream(filePath, FileMode.Create);
+                await file.CopyToAsync(stream);
+                return (webPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save uploaded file {FileName}", file.FileName);
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+                ModelState.AddModelError("Upload", "Uploaden is mislukt. Probeer het opnieuw of kies een ander bestand.");
+                return null;
+            }
         }
 
         private static bool IsSupportedMediaType(MediaType mediaType) =>

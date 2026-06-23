@@ -23,21 +23,24 @@
         <div class="row g-3">
             @foreach (var screen in Model.Screens)
             {
-                <div class="col-md-6 col-lg-4">
-                    <a href="/Display/@screen.Id" class="text-decoration-none" target="_blank">
-                        <div class="card border-0 shadow-sm h-100 card-hover">
-                            <div class="card-body text-center py-4">
-                                <i class="bi bi-display text-primary" style="font-size:2.5rem"></i>
-                                <h6 class="fw-bold mt-3 mb-1">@screen.Name</h6>
-                                <p class="text-muted small mb-0">@screen.Location</p>
-                                @if (screen.IsActive)
-                                {
-                                    <span class="badge badge-active rounded-pill mt-2">Live</span>
-                                }
+                @if (screen.IsActive)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <a href="/Display/@screen.Id" class="text-decoration-none" target="_blank">
+                            <div class="card border-0 shadow-sm h-100 card-hover">
+                                <div class="card-body text-center py-4">
+                                    <i class="bi bi-display text-primary" style="font-size:2.5rem"></i>
+                                    <h6 class="fw-bold mt-3 mb-1">@screen.Name</h6>
+                                    <p class="text-muted small mb-0">@screen.Location</p>
+                                    @if (screen.IsActive)
+                                    {
+                                        <span class="badge badge-active rounded-pill mt-2">Live</span>
+                                    }
+                                </div>
                             </div>
-                        </div>
-                    </a>
-                </div>
+                        </a>
+                    </div>
+                }
             }
         </div>
     }
