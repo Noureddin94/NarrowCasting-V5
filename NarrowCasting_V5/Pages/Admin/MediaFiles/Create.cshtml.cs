@@ -56,7 +56,7 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
 
         public async Task<IActionResult> OnPostAsync()
         {
-            // --- Validation ---
+            // Validation
             if (SelectedMediaType != MediaType.Text && Upload is null)
             {
                 ModelState.AddModelError("Upload", "Select a file to upload.");
@@ -75,86 +75,89 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
                 return Page();
             }
 
-            // --- Handle file-based media ---
+            // Handle file-based media
             if (SelectedMediaType != MediaType.Text)
             {
-            if (Upload!.Length == 0)
-            {
-                ModelState.AddModelError("Upload", "The selected file is empty.");
-                return Page();
-            }
+                if (Upload!.Length == 0)
+                {
+                    ModelState.AddModelError("Upload", "The selected file is empty.");
+                    return Page();
+                }
 
                 var ext = Path.GetExtension(Upload.FileName);
                 var rules = GetUploadRules(SelectedMediaType);
 
                 if (Upload.Length > rules.MaxBytes)
-            {
-                    ModelState.AddModelError("Upload", $"Het bestand is te groot. Maximum is {rules.MaxMegabytes} MB voor {SelectedMediaType.ToString().ToLowerInvariant()}.");
-                return Page();
-            }
+                {
+                    ModelState.AddModelError("Upload", 
+                        $"Het bestand is te groot. Maximum is {rules.MaxMegabytes} MB voor {SelectedMediaType.ToString().ToLowerInvariant()}.");
+                    return Page();
+                }
 
                 if (!rules.ContentTypeSet.Contains(Upload.ContentType) || !rules.ExtensionSet.Contains(ext))
-            {
+                {
                     ModelState.AddModelError("Upload", rules.ErrorMessage);
                     return Page();
                 }
             }
 
-            // --- Build the MediaFile entity ---
+            // Build the MediaFile entity
             var userId = _userManager.GetUserId(User);
-            var mf = new MediaFile
+            var mediaFile = new MediaFile
             {
                 FileName = SelectedMediaType == MediaType.Text ? "Text" : Path.GetFileName(Upload!.FileName),
                 FilePath = string.Empty,
                 MediaType = SelectedMediaType,
                 UploadedById = userId,
                 Caption = Caption,
-                TextContent = TextContent
+                TextContent = SelectedMediaType == MediaType.Text ? TextContent : null
             };
 
             if (SelectedMediaType != MediaType.Text)
             {
-                // --- Save the uploaded file ---
-                var uploadsRoot = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads");
-                var fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(Upload!.FileName);
-                var filePath = Path.Combine(uploadsRoot, fileName);
-                var webPath = "/uploads/" + fileName;
-                
-                mf.FilePath = webPath;
-
-                try
-                {
-                    Directory.CreateDirectory(uploadsRoot);
-                        await using var stream = System.IO.File.Create(filePath);
-                        await Upload.CopyToAsync(stream);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to upload media file {FileName}", mf.FileName);
-                    if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
-                    ModelState.AddModelError("Upload", "Upload failed. Please try again or choose another file.");
+                var saved = await SaveUploadedFileAsync(Upload!);
+                if (saved is null)
                     return Page();
-                }
+                mediaFile.FilePath = saved;
             }
-            else
-                {
-                // Text does not have a file path � you can leave FilePath null or empty
-                mf.FilePath = string.Empty;
-                }
 
             try
             {
-                await _mediaFiles.CreateAsync(mf);
+                await _mediaFiles.CreateAsync(mediaFile);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create media record");
-                ModelState.AddModelError("", "Something went wrong saving the record.");
+                ModelState.AddModelError(string.Empty, "Er is een fout opgetreden bij het opslaan van het mediabestand.");
                 return Page();
             }
 
-            TempData["Success"] = "Bestand geupload.";
+            TempData["SuccessMessage"] = "Media bestand succesvol toegevoegd.";
             return RedirectToPage("/Admin/MediaFiles/Index");
+        }
+
+        private async Task<string?> SaveUploadedFileAsync(IFormFile file)
+        {
+            var uploadsRoot = Path.Combine(_env.ContentRootPath, "UploadedFiles");
+            var fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(file.FileName);
+            var filePath = Path.Combine(uploadsRoot, fileName);
+            var webPath = "/uploads/" + fileName;
+
+            try
+            {
+                Directory.CreateDirectory(uploadsRoot);
+                await using var stream = new FileStream(filePath, FileMode.Create);
+                await file.CopyToAsync(stream);
+                return (webPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save uploaded file {FileName}", file.FileName);
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+                ModelState.AddModelError("Upload", "Uploaden is mislukt. Probeer het opnieuw of kies een ander bestand.");
+                return null;
+            }
         }
 
         private static bool IsSupportedMediaType(MediaType mediaType) =>
