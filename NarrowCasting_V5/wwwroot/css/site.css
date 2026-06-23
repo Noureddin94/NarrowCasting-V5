@@ -29,3 +29,22 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+.topbar {
+    background-color: #f8f9fa;
+    font-size: 0.9rem;
+}
+
+    .topbar a {
+        text-decoration: none;
+        color: #0b3f8a;
+    }
+
+.navbar-brand {
+    font-size: 1.6rem;
+}
+
+.card-img-top {
+    height: 220px;
+    object-fit: cover;
+}
