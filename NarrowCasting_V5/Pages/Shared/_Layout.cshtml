@@ -42,17 +42,29 @@
     </style>
 </head>
 <body>
+    <div class="topbar py-2">
+        <div class="container d-flex justify-content-end gap-4">
+            <a href="#">Werken bij</a>
+            <a href="#">Medewerkers</a>
+            <a href="/About">Over ons</a>
+            <a href="#">Contact</a>
+            <a href="#">Zoeken</a>
+            <a href="#">Mijn Ziekenhuis+</a>
+        </div>
+    </div>
+
     <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/"><i class="bi bi-hospital me-2"></i>Ziekenhuis Info</a>
+            <a class="navbar-brand fw-bold" href="/"><i class="bi bi-hospital me-2"></i>Ziekenhuis</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navMenu">
                 <ul class="navbar-nav ms-auto gap-2">
                     <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Admin/Departments/Index">Afdelingen</a></li>
                     <li class="nav-item"><a class="nav-link" href="/Cast">Schermen</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/About">Over ons</a></li>
+                    @* <li class="nav-item"><a class="nav-link" href="/About">Over ons</a></li> *@
                 </ul>
             </div>
         </div>
@@ -64,7 +76,7 @@
 
     <footer class="py-4 mt-5">
         <div class="container text-center">
-            <p class="mb-0">&copy; @DateTime.Now.Year Ziekenhuis Narrowcasting Systeem</p>
+            <p class="mb-0">&copy; @DateTime.Now.Year Ziekenhuis</p>
         </div>
     </footer>
 

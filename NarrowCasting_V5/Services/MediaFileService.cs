@@ -26,10 +26,15 @@ namespace NarrowCasting_V5.Services
             return await _db.MediaFiles.FirstOrDefaultAsync(m => m.Id == id);
         }
 
-        public async Task CreateAsync(MediaFile file)
+        public async Task CreateAsync(MediaFile file, string? userId = null)
         {
             _db.MediaFiles.Add(file);
             await _db.SaveChangesAsync();
+
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                await _audit.LogAsync("MediaFile", file.Id, "Create", userId);
+            }
         }
 
         public async Task<(bool Success, string? Error)> DeleteAsync(int id , string userId)
