@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NarrowCasting_V5.Data;
+using NarrowCasting_V5.Enums;
 using NarrowCasting_V5.Interfaces;
 using NarrowCasting_V5.Models;
 
@@ -9,11 +10,13 @@ namespace NarrowCasting_V5.Services
     {
         private readonly ApplicationDbContext _db;
         private readonly IAuditService _audit;
+        private readonly IWebHostEnvironment _env;
 
-        public MediaFileService(ApplicationDbContext db, IAuditService audit)
+        public MediaFileService(ApplicationDbContext db, IAuditService audit, IWebHostEnvironment env)
         {
             _db = db;
             _audit = audit;
+            _env = env;
         }
 
         public async Task<IEnumerable<MediaFile>> GetAllOrderedAsync()
@@ -35,6 +38,53 @@ namespace NarrowCasting_V5.Services
             {
                 await _audit.LogAsync("MediaFile", file.Id, "Create", userId);
             }
+        }
+
+        public async Task<(bool Success, string? Error)> UpdateAsync(int id, string? caption, string? textContent, IFormFile? newFile, string userId)
+        {
+            var media = await _db.MediaFiles.FindAsync(id);
+            if (media is null)
+                return (false, "Media not found");
+
+            // Update text fields
+            media.Caption = caption;
+            if (media.MediaType == MediaType.Text && textContent != null)
+            {
+                media.TextContent = textContent;
+            }
+
+            // Handle file replacement
+            if (newFile is not null && newFile.Length > 0)
+            {
+                // Only allow file replacement for non‑text types
+                if (media.MediaType == MediaType.Text)
+                    return (false, "Cannot upload file for text‑only media.");
+
+                // Delete old physical file
+                if (!string.IsNullOrEmpty(media.FilePath))
+                {
+                    var oldFilePath = Path.Combine(_env.ContentRootPath, "UploadedFiles", Path.GetFileName(media.FilePath));
+                    if (System.IO.File.Exists(oldFilePath))
+                        System.IO.File.Delete(oldFilePath);
+                }
+
+                // Save new file
+                var uploadsRoot = Path.Combine(_env.ContentRootPath, "UploadedFiles");
+                var fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(newFile.FileName);
+                var filePath = Path.Combine(uploadsRoot, fileName);
+                var webPath = "/uploads/" + fileName;
+
+                Directory.CreateDirectory(uploadsRoot);
+                await using var stream = new FileStream(filePath, FileMode.Create);
+                await newFile.CopyToAsync(stream);
+
+                media.FileName = Path.GetFileName(newFile.FileName);
+                media.FilePath = webPath;
+            }
+
+            await _db.SaveChangesAsync();
+            await _audit.LogAsync("MediaFile", id, "Update", userId);
+            return (true, null);
         }
 
         public async Task<(bool Success, string? Error)> DeleteAsync(int id , string userId)

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using NarrowCasting_V5.Interfaces;
 using NarrowCasting_V5.Models;
+using NarrowCasting_V5.Services;
+using static NarrowCasting_V5.Services.DepartmentService;
 
 namespace NarrowCasting_V5.Pages.Admin.Departments
 {
@@ -40,10 +42,29 @@ namespace NarrowCasting_V5.Pages.Admin.Departments
 
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
-            var userId = _userManager.GetUserId(User)!;
-            await _departments.DeleteAsync(id, userId);
-            TempData["Success"] = "Afdeling verwijderd.";
-            return RedirectToPage();
+            var userId = _userManager.GetUserId(User);
+            if (userId is null)
+            {
+                TempData["Error"] = "Gebruiker niet gevonden.";
+                return RedirectToPage("./Index");
+            }
+
+            var result = await _departments.DeleteAsync(id, userId);
+
+            switch (result)
+            {
+                case DepartmentDeleteResult.NotFound:
+                    TempData["Error"] = "Afdeling niet gevonden.";
+                    break;
+                case DepartmentDeleteResult.HasRelatedScreens:
+                    TempData["Error"] = "Deze afdeling kan niet worden verwijderd omdat er nog schermen aan gekoppeld zijn.";
+                    break;
+                case DepartmentDeleteResult.Success:
+                    TempData["Success"] = "Afdeling succesvol verwijderd.";
+                    break;
+            }
+
+            return RedirectToPage("./Index");
         }
     }
 }

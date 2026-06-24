@@ -74,7 +74,18 @@
                     {
                         <div class="mt-1">@mf.Caption</div>
                     }
-                    <div class="mt-2">
+                    <div class="mt-2 d-flex gap-2">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editMediaModal"
+                                data-id="@mf.Id"
+                                data-caption="@mf.Caption"
+                                data-textcontent="@mf.TextContent"
+                                data-mediatype="@((int)mf.MediaType)"
+                                data-filepath="@mf.FilePath">
+                            <i class="bi bi-pencil"></i>
+                        </button>
                         <form method="post" asp-page-handler="Delete">
                             <input type="hidden" name="id" value="@mf.Id" />
 
@@ -90,3 +101,74 @@
         </div>
     }
 </div>
+
+<div class="modal fade" id="editMediaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Edit" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="EditId" id="editId" />
+                <div class="modal-header border-0">
+                    <h6 class="modal-title fw-bold">Media bewerken</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium small">Bijschrift</label>
+                        <input name="EditCaption" id="editCaption" class="form-control" maxlength="500" />
+                    </div>
+                    <div class="mb-3" id="editTextContentSection" style="display:none;">
+                        <label class="form-label fw-medium small">Tekst</label>
+                        <textarea name="EditTextContent" id="editTextContent" class="form-control" rows="5" maxlength="10000"></textarea>
+                    </div>
+                    <div class="mb-3" id="editFileSection">
+                        <label class="form-label fw-medium small">Vervang bestand</label>
+                        <input type="file" name="EditFile" class="form-control" />
+                        <small class="text-muted">Laat leeg om het huidige bestand te behouden.</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-sm btn-primary">Opslaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const editMediaModal = document.getElementById('editMediaModal');
+        editMediaModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const caption = button.getAttribute('data-caption') || '';
+            const textContent = button.getAttribute('data-textcontent') || '';
+            const mediaType = parseInt(button.getAttribute('data-mediatype'));
+            // mediaType: 0=Text, 1=Image, 2=Video, 3=Audio
+
+            document.getElementById('editId').value = id;
+            document.getElementById('editCaption').value = caption;
+
+            const textSection = document.getElementById('editTextContentSection');
+            const fileSection = document.getElementById('editFileSection');
+
+            if (mediaType === 0) { // Text
+                textSection.style.display = 'block';
+                document.getElementById('editTextContent').value = textContent;
+                fileSection.style.display = 'none'; // no file for text
+            } else {
+                textSection.style.display = 'none';
+                fileSection.style.display = 'block';
+            }
+        });
+
+        // Clear modal when hidden (optional)
+        editMediaModal.addEventListener('hidden.bs.modal', function () {
+            document.getElementById('editId').value = '';
+            document.getElementById('editCaption').value = '';
+            document.getElementById('editTextContent').value = '';
+            document.querySelector('input[name="EditFile"]').value = '';
+        });
+    </script>
+}   

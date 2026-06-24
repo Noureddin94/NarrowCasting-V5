@@ -53,7 +53,7 @@ namespace NarrowCasting_V5.Pages.Public
         {
             public static DisplaySlide FromMedia(MediaFile media, int durationSeconds)
             {
-                var title = string.IsNullOrWhiteSpace(media.Caption) ? media.FileName : media.Caption!;
+                var title = string.IsNullOrWhiteSpace(media.Caption) ? "" : media.Caption!;
                 return new DisplaySlide(
                     "media",
                     title,

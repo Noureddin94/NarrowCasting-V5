@@ -30,6 +30,14 @@
     </div>
 }
 
+@if (TempData["Error"] is string errorMsg)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2 small">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMsg
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <div class="row g-3 mt-1">
     @foreach (var dept in Model.Departments)
     {

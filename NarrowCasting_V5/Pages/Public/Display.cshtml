@@ -95,7 +95,7 @@ else
                 <video class="slide-media slide-video d-none" id="slideVideo" muted autoplay playsinline></video>
                 <div class="slide-overlay d-none" id="slideOverlay"></div>
                 <audio class="slide-audio d-none" id="slideAudio" controls autoplay></audio>
-                <div class="ann-card" id="slideText">
+                <div class="ann-card" id="slideText" style="display:none">
                     <div class="ann-dept" id="slideDept"></div>
                     <div class="ann-title" id="slideTitle">Laden...</div>
                     <div class="ann-body" id="slideBody"></div>
@@ -171,13 +171,23 @@ else
                     audio.play();
                 }
 
-                card.style.animation = 'none';
-                void card.offsetWidth; // reflow
-                card.style.animation = 'fadeInUp .6s ease';
+                const dept = a.department ?? '';
+                const title = a.title ?? '';
+                const body = a.body ?? '';
+                const hasText = dept || title || body;
 
-                document.getElementById('slideDept').textContent  = a.department ?? '';
-                document.getElementById('slideTitle').textContent = a.title ?? '';
-                document.getElementById('slideBody').textContent  = a.body ?? '';
+                if (hasText) {
+                    card.style.display = '';
+                    card.style.animation = 'none';
+                    void card.offsetWidth;
+                    card.style.animation = 'fadeInUp .6s ease';
+
+                    document.getElementById('slideDept').textContent  = dept;
+                    document.getElementById('slideTitle').textContent = title;
+                    document.getElementById('slideBody').textContent  = body;
+                } else {
+                    card.style.display = 'none';
+                }
 
                 const duration = a.durationMs || DEFAULT_DURATION;
                 const bar = document.getElementById('progressBar');

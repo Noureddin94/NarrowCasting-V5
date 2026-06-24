@@ -39,13 +39,29 @@ namespace NarrowCasting_V5.Services
             await _audit.LogAsync("Department", department.Id, "Update", userId);
         }
 
-        public async Task DeleteAsync(int id, string userId)
+        public async Task<DepartmentDeleteResult> DeleteAsync(int id, string userId)
         {
-            var dept = await _db.Departments.FindAsync(id);
-            if (dept is null) return;
+            var dept = await _db.Departments
+                .Include(d => d.Screens)   // load screens to check
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (dept is null)
+                return DepartmentDeleteResult.NotFound;
+
+            if (dept.Screens.Any())
+                return DepartmentDeleteResult.HasRelatedScreens;   // friendly failure
+
             _db.Departments.Remove(dept);
             await _db.SaveChangesAsync();
             await _audit.LogAsync("Department", id, "Delete", userId);
+            return DepartmentDeleteResult.Success;
+        }
+
+        public enum DepartmentDeleteResult
+        {
+            Success,
+            NotFound,
+            HasRelatedScreens
         }
     }
 }
