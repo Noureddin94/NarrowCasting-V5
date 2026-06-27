@@ -37,7 +37,6 @@ namespace NarrowCasting_V5
             };
 
             var builder = WebApplication.CreateBuilder(args);
-            builder.Host.UseSerilog();
 
             builder.Host.UseSerilog((context, services, configuration) =>
             {
@@ -103,6 +102,16 @@ namespace NarrowCasting_V5
                 options.Conventions.AuthorizeFolder("/Admin/AuditLog", "Admin");
                 // Login page is public
                 options.Conventions.AllowAnonymousToPage("/Admin/Index");
+            });
+
+            builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+            {
+                options.Limits.MaxRequestBodySize = 300 * 1024 * 1024; // 300 MB ceiling
+            });
+
+            builder.Services.Configure<IISServerOptions>(options =>
+            {
+                options.MaxRequestBodySize = 300 * 1024 * 1024; // 300 MB
             });
 
             // API controllers
@@ -188,8 +197,8 @@ namespace NarrowCasting_V5
 
             app.UseHttpsRedirection();
 
-            // Ensure the uploads folder exists (outside wwwroot)
-            var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "UploadedFiles");
+            // Keep runtime uploads outside the web project so dotnet-watch does not restart on uploads.
+            var uploadsPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "UploadedFiles"));
             Directory.CreateDirectory(uploadsPath);
 
             // Serve uploaded files under /uploads

@@ -10,6 +10,9 @@
 
   <ItemGroup>
     <Content Include="Properties\launchSettings.json" />
+    <Watch Remove="UploadedFiles\**\*" />
+    <Content Remove="UploadedFiles\**\*" />
+    <None Remove="UploadedFiles\**\*" />
   </ItemGroup>
 
   <ItemGroup>

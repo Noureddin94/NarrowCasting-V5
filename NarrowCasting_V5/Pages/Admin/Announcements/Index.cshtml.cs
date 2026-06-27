@@ -7,7 +7,7 @@ using NarrowCasting_V5.Models;
 
 namespace NarrowCasting_V5.Pages.Admin.Announcements
 {
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class IndexModel : PageModel
     {
         private readonly IAnnouncementService _announcementService;

@@ -63,13 +63,13 @@ namespace NarrowCasting_V5.Services
                 // Delete old physical file
                 if (!string.IsNullOrEmpty(media.FilePath))
                 {
-                    var oldFilePath = Path.Combine(_env.ContentRootPath, "UploadedFiles", Path.GetFileName(media.FilePath));
+                    var oldFilePath = Path.Combine(GetUploadsRoot(), Path.GetFileName(media.FilePath));
                     if (System.IO.File.Exists(oldFilePath))
                         System.IO.File.Delete(oldFilePath);
                 }
 
                 // Save new file
-                var uploadsRoot = Path.Combine(_env.ContentRootPath, "UploadedFiles");
+                var uploadsRoot = GetUploadsRoot();
                 var fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(newFile.FileName);
                 var filePath = Path.Combine(uploadsRoot, fileName);
                 var webPath = "/uploads/" + fileName;
@@ -86,6 +86,9 @@ namespace NarrowCasting_V5.Services
             await _audit.LogAsync("MediaFile", id, "Update", userId);
             return (true, null);
         }
+
+        private string GetUploadsRoot() =>
+            Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "UploadedFiles"));
 
         public async Task<(bool Success, string? Error)> DeleteAsync(int id , string userId)
         {
