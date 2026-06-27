@@ -13,6 +13,8 @@ using System.ComponentModel.DataAnnotations;
 namespace NarrowCasting_V5.Pages.Admin.MediaFiles
 {
     [Authorize]
+    [RequestFormLimits(MultipartBodyLengthLimit = 300 * 1024 * 1024)]
+    [RequestSizeLimit(300 * 1024 * 1024)]
     public class CreateModel : PageModel
     {
         private readonly IMediaFileService _mediaFiles;
@@ -142,8 +144,7 @@ namespace NarrowCasting_V5.Pages.Admin.MediaFiles
 
         private async Task<string?> SaveUploadedFileAsync(IFormFile file)
         {
-            // Folder OUTSIDE wwwroot to avoid hot‑reload restart
-            var uploadsRoot = Path.Combine(_env.ContentRootPath, "UploadedFiles");
+            var uploadsRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "UploadedFiles"));
             var fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(file.FileName);
             var filePath = Path.Combine(uploadsRoot, fileName);
             var webPath = "/uploads/" + fileName;

@@ -21,8 +21,17 @@ namespace NarrowCasting_V5.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll() =>
-            Ok(await _departments.GetAllAsync());
+        [Authorize]
+        public async Task<IActionResult> GetAll()
+        {
+            if (!User.IsInRole("Admin"))
+            {
+                return Forbid();
+            }
+
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            return Ok(await _departments.GetAllAsync());
+        }
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)

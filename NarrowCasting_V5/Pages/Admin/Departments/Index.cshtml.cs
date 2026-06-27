@@ -9,7 +9,7 @@ using static NarrowCasting_V5.Services.DepartmentService;
 
 namespace NarrowCasting_V5.Pages.Admin.Departments
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class IndexModel : PageModel
     {
         private readonly IDepartmentService _departments;
