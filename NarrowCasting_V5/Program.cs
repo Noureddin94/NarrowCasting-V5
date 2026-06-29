@@ -7,6 +7,7 @@ using NarrowCasting_V5.Interfaces;
 using NarrowCasting_V5.Models;
 using NarrowCasting_V5.Services;
 using Serilog;
+using System.Text.Json.Serialization;
 
 namespace NarrowCasting_V5
 {
@@ -148,7 +149,11 @@ namespace NarrowCasting_V5
             });
 
             // API controllers
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                 .AddJsonOptions(options =>
+                 {
+                     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+                 });
 
             // Role-based policy
             builder.Services.AddAuthorization(options =>

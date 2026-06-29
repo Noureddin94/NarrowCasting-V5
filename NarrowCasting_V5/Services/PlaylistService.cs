@@ -9,12 +9,14 @@ namespace NarrowCasting_V5.Services
     {
         private readonly ApplicationDbContext _db;
         private readonly IAuditService _audit;
-        private const int MaxItems = 20;
+        private readonly int _maxItems;
 
-        public PlaylistService(ApplicationDbContext db, IAuditService audit)
+
+        public PlaylistService(ApplicationDbContext db, IAuditService audit, int maxItems = 20)
         {
             _db = db;
             _audit = audit;
+            _maxItems = maxItems;
         }
 
         public async Task<IEnumerable<Playlist>> GetAllAsync()
@@ -66,8 +68,8 @@ namespace NarrowCasting_V5.Services
         public async Task AddItemAsync(int playlistId, PlaylistItem item, string userId)
         {
             var count = await _db.PlaylistItems.CountAsync(i => i.PlaylistId == playlistId);
-            if (count >= MaxItems)
-                throw new InvalidOperationException($"Een playlist mag maximaal {MaxItems} items bevatten.");
+            if (count >= _maxItems)
+                throw new InvalidOperationException($"Een playlist mag maximaal {_maxItems} items bevatten.");
 
             item.PlaylistId = playlistId;
             _db.PlaylistItems.Add(item);

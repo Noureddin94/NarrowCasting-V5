@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -25,18 +25,21 @@ namespace NarrowCasting_V5.Pages.Admin.Departments
 
         public async Task OnGetAsync()
         {
-            if (!User.IsInRole("Admin"))
+            if (User.IsInRole("Admin"))
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user?.DepartmentId is null)
-                {
-                    Departments = [];
-                    return;
-                }
-                var department = await _departments.GetByIdAsync(user.DepartmentId.Value);
-                Departments = department is null ? [] : new[] { department };
+                Departments = await _departments.GetAllAsync();
                 return;
             }
+
+            // Non‑admin: only their own department
+            var user = await _userManager.GetUserAsync(User);
+            if (user?.DepartmentId is null)
+            {
+                Departments = [];
+                return;
+            }
+            var department = await _departments.GetByIdAsync(user.DepartmentId.Value);
+            Departments = department is null ? [] : new[] { department };
         }
 
 
