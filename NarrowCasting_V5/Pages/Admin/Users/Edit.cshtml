@@ -24,6 +24,14 @@
                 <form method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="Input.Id" />
+                    <input type="hidden" asp-for="Input.IsActive" />
+
+                    @if (!Model.Input.IsActive && Model.Input.Role == "Employee" && Model.Input.DepartmentId is null)
+                    {
+                        <div class="alert alert-warning py-2 small">
+                            Deze gebruiker wacht op goedkeuring. Kies een afdeling en sla op om het account te activeren.
+                        </div>
+                    }
 
                     <div class="mb-3">
                         <label asp-for="Input.FullName" class="form-label fw-medium small">Volledige naam *</label>

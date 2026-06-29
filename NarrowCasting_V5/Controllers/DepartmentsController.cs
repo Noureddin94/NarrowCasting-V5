@@ -26,7 +26,12 @@ namespace NarrowCasting_V5.Controllers
         {
             if (!User.IsInRole("Admin"))
             {
-                return Forbid();
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId is null)
+                    return Ok(Array.Empty<Department>());
+
+                var department = await _departments.GetByIdAsync(user.DepartmentId.Value);
+                return Ok(department is null ? Array.Empty<Department>() : new[] { department });
             }
 
             if (!ModelState.IsValid) return BadRequest(ModelState);

@@ -26,6 +26,7 @@ namespace NarrowCasting_V5.Pages.Admin.Users
             public string Role { get; set; } = "Employee";
             public string? DepartmentName { get; set; }
             public bool IsActive { get; set; }
+            public bool IsPendingApproval { get; set; }
         }
 
         public async Task OnGetAsync()
@@ -47,7 +48,8 @@ namespace NarrowCasting_V5.Pages.Admin.Users
                     Email = u.Email,
                     Role = roles.Contains("Admin") ? "Admin" : "Employee",
                     DepartmentName = u.Department?.Name,
-                    IsActive = u.IsActive
+                    IsActive = u.IsActive,
+                    IsPendingApproval = !u.IsActive && !roles.Contains("Admin") && u.DepartmentId is null
                 });
             }
         }

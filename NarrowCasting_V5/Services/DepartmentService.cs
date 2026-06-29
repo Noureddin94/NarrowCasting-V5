@@ -15,6 +15,7 @@ namespace NarrowCasting_V5.Services
             _db = db;
             _audit = audit;
         }
+
         public async Task<IEnumerable<Department>> GetAllAsync()
         {
             return await _db.Departments.Include(d => d.Screens).OrderBy(d => d.Name).ToListAsync();

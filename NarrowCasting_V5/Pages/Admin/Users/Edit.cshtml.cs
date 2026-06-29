@@ -39,6 +39,8 @@ namespace NarrowCasting_V5.Pages.Admin.Users
             public string Role { get; set; } = "Employee";
 
             public int? DepartmentId { get; set; }
+
+            public bool IsActive { get; set; }
         }
 
         private async Task LoadDepartmentsAsync()
@@ -62,7 +64,8 @@ namespace NarrowCasting_V5.Pages.Admin.Users
                 FullName = user.FullName,
                 Email = user.Email,
                 Role = roles.Contains("Admin") ? "Admin" : "Employee",
-                DepartmentId = user.DepartmentId
+                DepartmentId = user.DepartmentId,
+                IsActive = user.IsActive
             };
 
             return Page();
@@ -82,8 +85,10 @@ namespace NarrowCasting_V5.Pages.Admin.Users
 
             user.FullName = Input.FullName;
             user.DepartmentId = Input.Role == "Admin" ? null : Input.DepartmentId;
+            user.IsActive = Input.Role == "Admin" || Input.DepartmentId.HasValue;
 
             await _userManager.UpdateAsync(user);
+            await _userManager.SetLockoutEndDateAsync(user, user.IsActive ? null : DateTimeOffset.MaxValue);
 
             // Sync role if changed
             var currentRoles = await _userManager.GetRolesAsync(user);

@@ -23,8 +23,22 @@ namespace NarrowCasting_V5.Pages.Admin.Departments
 
         public IEnumerable<Department> Departments { get; set; } = [];
 
-        public async Task OnGetAsync() =>
-            Departments = await _departments.GetAllAsync();
+        public async Task OnGetAsync()
+        {
+            if (!User.IsInRole("Admin"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.DepartmentId is null)
+                {
+                    Departments = [];
+                    return;
+                }
+                var department = await _departments.GetByIdAsync(user.DepartmentId.Value);
+                Departments = department is null ? [] : new[] { department };
+                return;
+            }
+        }
+
 
         public async Task<IActionResult> OnPostSaveAsync(Department dept)
         {
