@@ -64,9 +64,13 @@
                                 <span class="badge bg-info text-dark rounded-pill">Employee</span>
                             }
                         </td>
-                        <td class="small">@(u.DepartmentName ?? "–")</td>
+                        <td class="small">@(u.DepartmentName ?? (u.Role == "Admin" ? "Alle afdelingen" : "Nog niet toegewezen"))</td>
                         <td>
-                            @if (u.IsActive)
+                            @if (u.IsPendingApproval)
+                            {
+                                <span class="badge bg-warning text-dark rounded-pill">Wacht op goedkeuring</span>
+                            }
+                            else if (u.IsActive)
                             {
                                 <span class="badge badge-active rounded-pill">Actief</span>
                             }

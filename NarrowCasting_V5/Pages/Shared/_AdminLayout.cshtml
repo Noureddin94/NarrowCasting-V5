@@ -269,11 +269,7 @@
            asp-page="/Admin/MediaFiles/Index">
             <i class="bi bi-images"></i> Mediabestanden
         </a>
-        <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString()?.StartsWith("/Admin/Announcements") == true ? "active" : "")"
-           asp-page="/Admin/Announcements/Index">
-            <i class="bi bi-megaphone"></i> Aankondigingen
-        </a>
-
+        
         @if (User.IsInRole("Admin"))
         {
             <div class="nav-section">Administratie</div>
@@ -284,6 +280,10 @@
             <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString()?.StartsWith("/Admin/AuditLog") == true ? "active" : "")"
                asp-page="/Admin/AuditLog/Index">
                 <i class="bi bi-shield-check"></i> Auditlog
+            </a>
+            <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString()?.StartsWith("/Admin/Announcements") == true ? "active" : "")"
+               asp-page="/Admin/Announcements/Index">
+                <i class="bi bi-megaphone"></i> Aankondigingen
             </a>
         }
 
